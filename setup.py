@@ -7,7 +7,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='langchain-llm7',
-    version='2025.04.101146',
+    version='2025.04.101157',
     author='Eugene Evstafev',
     author_email='chigwel@gmail.com',
     description='A LangChain wrapper for LLM7 API',
@@ -22,14 +22,14 @@ setup(
         'langchain-core==0.3.51'
     ],
     classifiers=[
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache Software License',
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.10',
-    license='MIT',
+    license='Apache-2.0',
     tests_require=['unittest'],
     test_suite='test',
 )
