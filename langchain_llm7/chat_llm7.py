@@ -1,3 +1,19 @@
+"""LangChain integration for LLM7's chat API.
+
+This module provides a ChatLLM7 class that implements the BaseChatModel interface,
+allowing seamless integration with LangChain's chat ecosystem.
+
+Example:
+    >>> from langchain_core.messages import HumanMessage, SystemMessage
+    >>> chat = ChatLLM7(model_name="gpt-4o-mini-2024-07-18")
+    >>> messages = [
+    ...     SystemMessage(content="You are a helpful assistant"),
+    ...     HumanMessage(content="What's the weather in London?")
+    ... ]
+    >>> response = chat.invoke(messages)
+    >>> print(response.content)
+"""
+
 from typing import Any, Dict, Iterator, List, Optional, Union
 import json
 import requests
@@ -19,7 +35,32 @@ from pydantic import Field, model_validator
 
 
 class ChatLLM7(BaseChatModel):
-    """ChatLLM7 integration for LangChain"""
+    """Chat interface for LLM7's API compatible with LangChain.
+
+    Attributes:
+        base_url (str): Base URL for the LLM7 API. Defaults to "https://api.llm7.io/v1".
+        model_name (str): Model name to use. Defaults to "gpt-4o-mini-2024-07-18".
+        temperature (float): Sampling temperature between 0 and 2. Defaults to 1.0.
+        max_tokens (Optional[int]): Maximum number of tokens to generate.
+        timeout (int): Timeout in seconds for API requests. Defaults to 120.
+        max_retries (int): Maximum number of retries for API calls. Defaults to 3.
+        stop (Optional[List[str]]): List of stop sequences to halt generation.
+        streaming (bool): Whether to stream responses. Defaults to False.
+
+    Example:
+        Basic usage with LangChain:
+        ```python
+        from langchain.chains import LLMChain
+        from langchain.prompts import ChatPromptTemplate
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a poetic assistant"),
+            ("human", "Write me a poem about {topic}")
+        ])
+        chain = LLMChain(llm=ChatLLM7(), prompt=prompt)
+        print(chain.run(topic="quantum physics"))
+        ```
+    """
 
     base_url: str = Field(default="https://api.llm7.io/v1")
     model_name: str = Field(default="gpt-4o-mini-2024-07-18", alias="model")
@@ -31,13 +72,30 @@ class ChatLLM7(BaseChatModel):
     streaming: bool = Field(default=False)
 
     @model_validator(mode="after")
-    def validate_environment(self):
-        """Validate that API key exists in environment."""
-        # API key is not required for this provider
+    def validate_environment(self) -> "ChatLLM7":
+        """Validate configuration and environment setup.
+
+        Note:
+            LLM7 currently doesn't require an API key, but this method is maintained
+            for future compatibility.
+
+        Returns:
+            The validated ChatLLM7 instance.
+        """
         return self
 
     def _format_messages(self, messages: List[BaseMessage]) -> List[Dict[str, str]]:
-        """Convert LangChain messages to LLM7 API format"""
+        """Convert LangChain messages to LLM7 API format.
+
+        Args:
+            messages: List of LangChain message objects
+
+        Returns:
+            List of messages in LLM7 API format
+
+        Raises:
+            ValueError: If unsupported message type is encountered
+        """
         formatted = []
         for msg in messages:
             if isinstance(msg, HumanMessage):
@@ -53,7 +111,15 @@ class ChatLLM7(BaseChatModel):
         return formatted
 
     def _create_payload(self, messages: List[BaseMessage], stream: bool) -> Dict[str, Any]:
-        """Create the request payload for LLM7 API"""
+        """Construct API request payload.
+
+        Args:
+            messages: List of formatted messages
+            stream: Whether the payload is for streaming
+
+        Returns:
+            Dictionary containing the complete request payload
+        """
         payload = {
             "model": self.model_name,
             "messages": self._format_messages(messages),
@@ -75,7 +141,20 @@ class ChatLLM7(BaseChatModel):
         run_manager: Optional[CallbackManagerForLLMRun]= None,
         ** kwargs: Any,
     ) -> ChatResult:
-        """Non-streaming generation"""
+        """Execute non-streaming chat completion.
+
+        Args:
+            messages: Input messages for the conversation
+            stop: Optional list of stop sequences
+            run_manager: Callback manager for LLM run
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            ChatResult containing generated response
+
+        Raises:
+            ValueError: If API request fails
+        """
         payload = self._create_payload(messages, stream=False)
         url = f"{self.base_url}/chat/completions"
 
@@ -123,7 +202,20 @@ class ChatLLM7(BaseChatModel):
             run_manager: Optional[CallbackManagerForLLMRun]= None,
     ** kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
-        """Streaming generation"""
+        """Handle streaming chat completions.
+
+        Args:
+            messages: Input messages for the conversation
+            stop: Optional list of stop sequences
+            run_manager: Callback manager for LLM run
+            **kwargs: Additional keyword arguments
+
+        Yields:
+            ChatGenerationChunk objects for each response chunk
+
+        Raises:
+            ValueError: If API request fails
+        """
         payload = self._create_payload(messages, stream=True)
         url = f"{self.base_url}/chat/completions"
 
@@ -172,11 +264,21 @@ class ChatLLM7(BaseChatModel):
 
     @property
     def _llm_type(self) -> str:
+        """Identifier for the LLM type.
+
+        Returns:
+            str: Always returns "llm7-chat"
+        """
         return "llm7-chat"
 
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:
+        """Get identifying parameters for the model.
+
+        Returns:
+            Dictionary of configuration parameters
+        """
         return {
             "model_name": self.model_name,
             "temperature": self.temperature,
