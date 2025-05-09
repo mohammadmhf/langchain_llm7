@@ -165,7 +165,10 @@ class ChatLLM7(BaseChatModel):
 
         text = ""
         for message in messages:
-            text += message.content + "\n"
+            try:
+                text += message.content + "\n"
+            except Exception:
+                pass
         input_tokens = tokeniser.estimate_tokens(text)
 
         response = requests.post(
