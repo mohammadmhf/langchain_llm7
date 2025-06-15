@@ -19,7 +19,7 @@ setup(
         'tokeniser>=0.0.3',
         'requests>=2.32.4',
         'pydantic==2.11.3',
-        'langchain-core>=0.3.51'
+        'langchain-core>=0.3.65,<0.4.0',
     ],
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
